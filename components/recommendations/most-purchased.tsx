@@ -1,0 +1,23 @@
+"use client";
+
+import { useMostPurchasedHome } from "@/lib/commerce-engine";
+import ProductButtonWithImage from "../product-button-with-image";
+import styles from "./most-viewed.module.css";
+
+export default function MostPurchasedRecommendations() {
+  const { state, methods } = useMostPurchasedHome();
+  const products = state.products ?? [];
+
+  return (
+    <section className={styles.carousel}>
+      <h3 className={styles.headline}>{state.headline}</h3>
+      <ul className={styles.carouselContainer}>
+        {products.map((product) => (
+          <li key={product.ec_product_id} className={styles.productCard}>
+            <ProductButtonWithImage methods={methods} product={product} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}

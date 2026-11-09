@@ -4,12 +4,10 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useMockServerCartService } from "@/components/providers/server-cart-provider";
-import { useCart } from "@/lib/commerce-engine";
 
 export default function Cart() {
   const { cartItems, updateQuantity, removeFromCart, subtotal, taxes, totalWithTax, checkout, isLoading } =
     useMockServerCartService();
-  const coveoHeadlessCart = useCart();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -32,35 +30,28 @@ export default function Cart() {
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <ul className="divide-y divide-gray-200">
                 {cartItems.map((item) => {
-                  const coveoHeadlessCartItem = {
-                    productId: item.product.ec_product_id!,
-                    name: item.product.ec_name!,
-                    price: item.product.ec_price!,
-                  };
                   return (
-                    <li key={item.product.ec_product_id} className="p-6 flex flex-col sm:flex-row">
+                    <li key={item.product.sku} className="p-6 flex flex-col sm:flex-row">
                       <div className="flex-shrink-0 w-24 h-24 rounded-md overflow-hidden relative mb-4 sm:mb-0">
-                        <Image
-                          src={item.product.ec_images[0]}
-                          alt={item.product.ec_name || "Product"}
-                          fill
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                          className="object-cover"
-                        />
+                        {item.product.image && (
+                          <Image
+                            src={item.product.image}
+                            alt={item.product.name || "Product"}
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            className="object-cover"
+                          />
+                        )}
                       </div>
                       <div className="sm:ml-6 flex-1 flex flex-col sm:flex-row sm:justify-between">
                         <div>
-                          <h3 className="text-lg font-medium text-gray-900">{item.product.ec_name}</h3>
-                          <p className="mt-1 text-sm text-gray-500">${item.product.ec_price}</p>
+                          <h3 className="text-lg font-medium text-gray-900">{item.product.name}</h3>
+                          <p className="mt-1 text-sm text-gray-500">${item.product.price.toFixed(2)}</p>
                         </div>
                         <div className="mt-4 sm:mt-0 flex items-center">
                           <button
                             onClick={() => {
-                              coveoHeadlessCart.methods?.updateItemQuantity({
-                                ...coveoHeadlessCartItem,
-                                quantity: item.quantity - 1,
-                              });
-                              updateQuantity(item.product.ec_product_id!, item.quantity - 1);
+                              updateQuantity(item.product.sku, item.quantity - 1);
                             }}
                             className="p-1 rounded-full text-gray-400 hover:text-gray-500"
                           >
@@ -72,11 +63,7 @@ export default function Cart() {
                           <span className="mx-2 text-gray-700">{item.quantity}</span>
                           <button
                             onClick={() => {
-                              coveoHeadlessCart.methods?.updateItemQuantity({
-                                ...coveoHeadlessCartItem,
-                                quantity: item.quantity + 1,
-                              });
-                              updateQuantity(item.product.ec_product_id!, item.quantity + 1);
+                              updateQuantity(item.product.sku, item.quantity + 1);
                             }}
                             className="p-1 rounded-full text-gray-400 hover:text-gray-500"
                           >
@@ -87,11 +74,7 @@ export default function Cart() {
                           </button>
                           <button
                             onClick={() => {
-                              coveoHeadlessCart.methods?.updateItemQuantity({
-                                ...coveoHeadlessCartItem,
-                                quantity: 0,
-                              });
-                              removeFromCart(item.product.ec_product_id!);
+                              removeFromCart(item.product.sku);
                             }}
                             className="ml-4 text-sm font-medium text-red-600 hover:text-red-500"
                           >
@@ -134,13 +117,8 @@ export default function Cart() {
                   disabled={isLoading}
                   onClick={async () => {
                     try {
-                      const checkoutResult = await checkout();
-                      if (checkoutResult.success) {
-                        coveoHeadlessCart.methods?.purchase({
-                          id: checkoutResult.transactionId,
-                          revenue: checkoutResult.revenue,
-                        });
-                      }
+                      await checkout();
+                      // TODO (later exercise): send a Coveo purchase analytics event here.
                     } catch (error) {
                       console.error("Checkout failed:", error);
                     }

@@ -1,23 +1,24 @@
 "use server";
 
-import { Product, CartInitialState } from "@coveo/headless-react/ssr-commerce";
+import type { Product } from "./pim/types";
 import { cookies } from "next/headers";
 import { v4 as uuidv4 } from "uuid";
 
 // This file provides mock server-side actions for managing a shopping cart.
 // It uses cookies to store cart items and provides functions to manipulate the cart.
-// In a real application, these function would interact with persistent storage, like a database, or a PIM system.
+// In a real application, these functions would call the commerce backend's cart API.
 
 export type CartItem = {
-  product: SimplifiedProductForCookieStorage;
+  product: CartProduct;
   quantity: number;
 };
 
-type SimplifiedProductForCookieStorage = {
-  ec_product_id: string;
-  ec_name: string;
-  ec_price: number;
-  ec_images: string[];
+// Only what the cart page needs, to keep the cookie small.
+export type CartProduct = {
+  sku: string;
+  name: string;
+  price: number;
+  image?: string;
 };
 
 export type SuccessfulCheckout = {
@@ -39,7 +40,9 @@ async function getCartFromCookies(): Promise<CartItem[]> {
 
     if (!cartCookie) return [];
 
-    return JSON.parse(cartCookie.value) as CartItem[];
+    const items = JSON.parse(cartCookie.value) as CartItem[];
+    // Ignore entries written in another format (e.g. by the solutions branch).
+    return items.filter((item) => typeof item?.product?.sku === "string");
   } catch (error) {
     console.error("Failed to parse cart cookie:", error);
     return [];
@@ -69,37 +72,39 @@ export async function getCartItems(): Promise<CartItem[]> {
 export async function addToCart(product: Product, quantity: number = 1): Promise<CartItem[]> {
   const cartItems = await getCartFromCookies();
 
-  const existingItemIndex = cartItems.findIndex((item) => item.product.ec_product_id === product.ec_product_id);
+  const existingItemIndex = cartItems.findIndex((item) => item.product.sku === product.sku);
 
   if (existingItemIndex >= 0) {
     cartItems[existingItemIndex].quantity += quantity;
   } else {
-    const simplifiedProduct = {
-      ec_product_id: product.ec_product_id!,
-      ec_name: product.ec_name!,
-      ec_price: product.ec_price!,
-      ec_images: product.ec_images!,
-    };
-    cartItems.push({ product: simplifiedProduct, quantity });
+    cartItems.push({
+      product: {
+        sku: product.sku,
+        name: product.name,
+        price: product.price?.amount ?? 0,
+        image: product.images[0],
+      },
+      quantity,
+    });
   }
 
   await setCartInCookies(cartItems);
   return cartItems;
 }
 
-export async function removeFromCart(productId: string): Promise<CartItem[]> {
+export async function removeFromCart(sku: string): Promise<CartItem[]> {
   const cartItems = await getCartFromCookies();
 
-  const updatedCart = cartItems.filter((item) => item.product.ec_product_id !== productId);
+  const updatedCart = cartItems.filter((item) => item.product.sku !== sku);
 
   await setCartInCookies(updatedCart);
   return updatedCart;
 }
 
-export async function updateQuantity(productId: string, quantity: number): Promise<CartItem[]> {
+export async function updateQuantity(sku: string, quantity: number): Promise<CartItem[]> {
   const cartItems = await getCartFromCookies();
 
-  const itemIndex = cartItems.findIndex((item) => item.product.ec_product_id === productId);
+  const itemIndex = cartItems.findIndex((item) => item.product.sku === sku);
 
   if (itemIndex >= 0 && quantity > 0) {
     cartItems[itemIndex].quantity = quantity;
@@ -116,7 +121,7 @@ export async function getCartCount(): Promise<number> {
 
 export async function getSubtotal(): Promise<number> {
   const cartItems = await getCartFromCookies();
-  return cartItems.reduce((total, item) => total + Number(item.product.ec_price) * item.quantity, 0);
+  return cartItems.reduce((total, item) => total + item.product.price * item.quantity, 0);
 }
 
 export async function getTaxes(): Promise<number> {
@@ -133,17 +138,6 @@ export async function getTotalWithTax(): Promise<number> {
 export async function clearCart(): Promise<CartItem[]> {
   await setCartInCookies([]);
   return [];
-}
-
-export async function getCartItemsWithMetadata(): Promise<CartInitialState["items"]> {
-  const cartItems = await getCartFromCookies();
-
-  return cartItems.map((item) => ({
-    name: item.product.ec_name!,
-    price: item.product.ec_price!,
-    productId: item.product.ec_product_id!,
-    quantity: item.quantity,
-  }));
 }
 
 export async function checkout(): Promise<CheckoutResult> {

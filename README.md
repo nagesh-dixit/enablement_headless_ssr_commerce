@@ -1,8 +1,16 @@
 # Next.js Coveo SSR Commerce (Training Project)
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
 > **Note:** This project is for training purposes.
+
+This `main` branch is the **starter**: a Next.js storefront whose home page lists every product
+straight from a backend PIM API. Like many PIM and commerce backends, that API only returns raw
+product data: no keyword search, relevance, facets, or personalization. Each exercise adds a Coveo
+capability on top of it.
+
+No account is needed. The app serves the PIM API itself, at `/api/pim`, from the Barca catalog in
+[`data/catalog.json`](data/catalog.json) (the same products that are indexed in Coveo).
+
+The finished app is on the [`solutions`](../../tree/solutions) branch.
 
 ## Getting Started
 
@@ -19,19 +27,38 @@ cd enablement_headless_ssr_commerce
 npm install
 ```
 
-### 3. Build the project
-
-```bash
-npm run build
-```
-
-### 4. Run the development server
+### 3. Run the development server
 
 ```bash
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## What's in the starter
+
+| Path                                                         | What it does                                                                                                                                                         |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`app/page.tsx`](app/page.tsx)                               | Home page. Server-renders the catalog from the PIM API, 48 products per page.                                                                                        |
+| [`app/products/[sku]/page.tsx`](app/products/[sku]/page.tsx) | Product detail page (`/products/<sku>`). Same path as the product URLs in the Coveo index, so search results can link to it. Variant SKUs redirect to their product. |
+| [`app/cart/page.tsx`](app/cart/page.tsx)                     | Mock cart stored in a cookie ([`lib/cart-actions.ts`](lib/cart-actions.ts)).                                                                                         |
+| [`app/api/pim/`](app/api/pim/)                               | Mock PIM API: `GET /api/pim/products?offset=&limit=` and `GET /api/pim/products/{sku}`.                                                                              |
+| [`lib/pim/client.ts`](lib/pim/client.ts)                     | HTTP client the pages use to call the PIM API.                                                                                                                       |
+| [`data/catalog.json`](data/catalog.json)                     | The catalog: an array of `Product` objects ([`lib/pim/types.ts`](lib/pim/types.ts)).                                                                                 |
+
+### Using another backend
+
+The pages only talk to the PIM API over HTTP. To use a different backend, set `PIM_API_URL` in
+`.env.local` to a service that returns the same JSON (see `.env.example`).
+
+## Exercises
+
+1. **Hosted search page:** add a search box and a `/search` page that embeds a Coveo hosted search page.
+2. **Atomic SSR search page:** replace the hosted page with a server-rendered Coveo Atomic search page.
+3. **Listing pages:** add category listing pages powered by Coveo.
+4. **Recommendations:** add recommendation carousels to the home page.
+
+Look for `TODO (exercise ...)` and `TODO (later exercise)` comments in the code for where each one plugs in.
 
 ## Available Scripts
 
@@ -40,15 +67,3 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - `npm run start` – Start the production server.
 - `npm run lint` – Run ESLint.
 - `npm run format` – Format code using Prettier.
-
-## Tasks / TODOs
-
-- [ ] Replace placeholder values (`organizationId`, `accessToken`, `trackingId`) in [`lib/commerce-engine-config.ts`](lib/commerce-engine-config.ts) with real credentials.
-- [ ] Review and update the commerce engine configuration as needed for your use case.
-- [ ] Implement the recommendations engine definition and provider in [`components/providers/providers.tsx`](components/providers/providers.tsx).
-- [ ] Add a recommendation carousel to the homepage.
-- [ ] Implement the listing engine definition and provider in [`components/providers/providers.tsx`](components/providers/providers.tsx).
-- [ ] Create a new page at [`app/listing`](app/listing) to display product listings.
-- [ ] Implement additional features or controllers as required for your training objectives.
-
-> Check the code for further TODO comments and update this list as you progress.

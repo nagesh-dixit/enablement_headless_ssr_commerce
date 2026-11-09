@@ -1,6 +1,6 @@
 "use client";
 
-import { Product } from "@coveo/headless-react/ssr-commerce";
+import type { Product } from "@/lib/pim/types";
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import {
   CartItem,
@@ -19,13 +19,13 @@ import {
 
 // This file provides a mock server context for managing cart operations.
 // It simulates server-side cart actions and provides a context for components to use.
-// In a real application, these functions would interact with a backend server with persistent storage.
+// In a real application, these functions would call the commerce backend's cart API.
 
 interface MockServerCartContextType {
   cartItems: CartItem[];
   addToCart: (product: Product, quantity?: number) => Promise<void>;
-  removeFromCart: (productId: string) => Promise<void>;
-  updateQuantity: (productId: string, quantity: number) => Promise<void>;
+  removeFromCart: (sku: string) => Promise<void>;
+  updateQuantity: (sku: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
   checkout: () => Promise<CheckoutResult>;
   cartCount: number;
@@ -103,10 +103,10 @@ export function MockServerCartProvider({ children }: MockServerCartProviderProps
     }
   };
 
-  const removeFromCart = async (productId: string) => {
+  const removeFromCart = async (sku: string) => {
     setIsLoading(true);
     try {
-      await serverRemoveFromCart(productId);
+      await serverRemoveFromCart(sku);
       await updateCartData();
     } catch (error) {
       console.error("Failed to remove from cart:", error);
@@ -115,10 +115,10 @@ export function MockServerCartProvider({ children }: MockServerCartProviderProps
     }
   };
 
-  const updateQuantity = async (productId: string, quantity: number) => {
+  const updateQuantity = async (sku: string, quantity: number) => {
     setIsLoading(true);
     try {
-      await serverUpdateQuantity(productId, quantity);
+      await serverUpdateQuantity(sku, quantity);
       await updateCartData();
     } catch (error) {
       console.error("Failed to update quantity:", error);

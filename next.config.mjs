@@ -8,6 +8,7 @@ if (existsSync(".env.local")) {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    // Product image URLs come from data/catalog.json. Add your image host here if it isn't listed.
     remotePatterns: [
       {
         protocol: "https",

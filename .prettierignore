@@ -16,3 +16,4 @@ yarn.lock
 *.json
 *.yml
 *.yaml
+data/

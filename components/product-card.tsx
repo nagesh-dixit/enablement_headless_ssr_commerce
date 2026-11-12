@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/lib/pim/types";
 import { formatPrice } from "@/lib/format-price";
+import { htmlToText } from "@/lib/html";
 import AddToCartButton from "./cart/add-to-cart-button";
 
 export default function ProductCard({ product }: { product: Product }) {
@@ -31,7 +32,9 @@ export default function ProductCard({ product }: { product: Product }) {
           {product.brand && <span className="text-sm text-gray-600">({product.brand})</span>}
         </h3>
 
-        {product.description && <p className="text-sm text-gray-600 mb-3 line-clamp-5">{product.description}</p>}
+        {product.description && (
+          <p className="text-sm text-gray-600 mb-3 line-clamp-5">{htmlToText(product.description)}</p>
+        )}
 
         <div className="mt-auto pt-3 border-t border-gray-100 flex justify-between items-center">
           <span className="font-bold text-lg text-blue-900">{formatPrice(product.price)}</span>

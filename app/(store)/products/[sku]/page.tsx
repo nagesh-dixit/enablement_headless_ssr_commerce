@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import AddToCartButton from "@/components/cart/add-to-cart-button";
 import { getProductBySku } from "@/lib/pim/client";
 import { formatPrice } from "@/lib/format-price";
+import { sanitizeHtml } from "@/lib/html";
 
 // Product detail page: /products/{sku}
 //
@@ -58,7 +59,12 @@ export default async function ProductPage({ params }: { params: { sku: string } 
               <span className="font-medium">Available sizes:</span> {sizes.join(", ")}
             </p>
           )}
-          {product.description && <p className="text-gray-700 leading-relaxed">{product.description}</p>}
+          {product.description && (
+            <div
+              className="text-gray-700 leading-relaxed space-y-3 [&_h1]:text-xl [&_h1]:font-semibold [&_h1]:text-gray-900 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-gray-900 [&_h3]:font-semibold [&_h3]:text-gray-900 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:space-y-1"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }}
+            />
+          )}
           <AddToCartButton product={product} />
           {/* TODO (later exercise): send a Coveo product view event from this page. */}
         </div>
